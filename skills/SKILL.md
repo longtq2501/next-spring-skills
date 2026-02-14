@@ -66,6 +66,9 @@ See [threejs.md](./nextjs/threejs.md) for high-performance 3D development and R3
 ### WebRTC & P2P
 See [webrtc.md](./nextjs/webrtc.md) for real-time media and signaling.
 
+### Quality Assurance
+See [testing.md](./nextjs/testing.md) for Vitest and React Testing Library patterns.
+
 ### Accessibility (a11y)
 See [accessibility.md](./nextjs/accessibility.md) for semantic HTML and ARIA.
 
@@ -117,6 +120,9 @@ High-performance, stateless REST API patterns using Spring Boot, JPA, and JWT.
 ### Real-time
 - [WebSocket & STOMP](./spring/websocket.md)
 - [Server-Sent Events (SSE)](./spring/sse.md)
+
+### Quality Assurance
+- [Backend Testing](./spring/testing.md)
 
 ---
 
