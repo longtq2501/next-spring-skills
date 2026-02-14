@@ -1,0 +1,17 @@
+# NPM Publish Infrastructure
+package.json
+bin/
+.npmignore
+
+# Task Management
+task.md
+implementation_plan.md
+walkthrough.md
+roadmap.md
+brain/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

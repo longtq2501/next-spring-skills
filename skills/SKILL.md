@@ -60,6 +60,9 @@ See [interactivity.md](./nextjs/interactivity.md) for Framer Motion basics and A
 ### UI State Management
 See [ui-state.md](./nextjs/ui-state.md) for Zustand store patterns and URL parameters.
 
+### Three.js & 3D
+See [threejs.md](./nextjs/threejs.md) for high-performance 3D development and R3F.
+
 ### Accessibility (a11y)
 See [accessibility.md](./nextjs/accessibility.md) for semantic HTML and ARIA.
 
