@@ -11,6 +11,11 @@ Modular best practices, code templates, and interaction protocols for full-stack
 
 ---
 
+## NPM Package
+📦 **Registry**: [https://www.npmjs.com/package/@longtq2501/next-spring-skills](https://www.npmjs.com/package/@longtq2501/next-spring-skills)
+
+---
+
 ## Installation
 You can instantly add these skills to any project using `npx`:
 
