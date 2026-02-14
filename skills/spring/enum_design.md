@@ -1,11 +1,26 @@
-# Skill: Enum Design - Spring Boot Best Practices
+## TL;DR - Quick Reference
 
-## Context
-This skill defines standard patterns for designing enums in Spring Boot projects.
-Covers display names, state classification methods, FSM (Finite State Machine) patterns,
-JPA/JSON integration, and naming conventions.
+### Standard Enum Setup
+```java
+@Getter
+public enum MyStatus {
+    ACTIVE("Đang hoạt động"),
+    INACTIVE("Ngưng hoạt động");
 
-**When to use:** Any time you create a status field, category type, role, or any fixed set of values.
+    private final String displayName;
+    MyStatus(String displayName) { this.displayName = displayName; }
+}
+```
+
+### Critical Rules
+1. **Always use `EnumType.STRING`** in JPA entities.
+2. **Add boolean helpers** like `isTerminal()` or `isCancelled()` to encode business rules.
+3. **Use FSM pattern** (Map of transitions) for complex status flows.
+4. **Never use `Ordinal`** — it corrupts data if order changes.
+5. **Serialize to `displayName`** or map in DTO for UI labels.
+
+### 📄 Templates
+- [Standard Enum Template](./templates/EnumTemplate.java)
 
 ---
 
@@ -44,10 +59,10 @@ public enum LessonStatus {
 
 **Use `@Getter` (Lombok) instead of writing the getter manually:**
 ```java
-// ❌ Manual — boilerplate
+// Bad: Manual boilerplate getter
 public String getDisplayName() { return displayName; }
 
-// ✅ Lombok @Getter — clean
+// Good: Clean Lombok annotation
 @Getter
 public enum LessonStatus { ... }
 ```
@@ -433,91 +448,7 @@ public enum LessonStatus {
 
 ## Full Enum Template
 
-```java
-/**
- * [Short description of what this enum represents.]
- *
- * [Optional: describe the FSM flow if applicable]
- * e.g., PENDING → ACTIVE → COMPLETED (terminal)
- *
- * Terminal states (no further transitions): [list them]
- */
-@Getter
-public enum MyStatus {
-
-    /**
-     * [Initial state description.]
-     */
-    PENDING("Chờ xử lý"),
-
-    ACTIVE("Đang hoạt động"),
-
-    /**
-     * Terminal state — no further transitions allowed.
-     */
-    COMPLETED("Hoàn thành"),
-
-    /**
-     * Terminal state.
-     */
-    CANCELLED("Đã hủy");
-
-    private final String displayName;
-
-    // ─── FSM (remove if not needed) ───────────────────────────────────────
-
-    private static final Map<MyStatus, Set<MyStatus>> ALLOWED_TRANSITIONS = Map.of(
-        PENDING,    Set.of(ACTIVE, CANCELLED),
-        ACTIVE,     Set.of(COMPLETED, CANCELLED),
-        COMPLETED,  Set.of(),
-        CANCELLED,  Set.of()
-    );
-
-    MyStatus(String displayName) {
-        this.displayName = displayName;
-    }
-
-    // ─── State checks ─────────────────────────────────────────────────────
-
-    public boolean isTerminal() {
-        return this == COMPLETED || this == CANCELLED;
-    }
-
-    public boolean isCancelled() {
-        return this == CANCELLED;
-    }
-
-    // ─── FSM transitions (remove if not needed) ───────────────────────────
-
-    public MyStatus transitionTo(MyStatus next) {
-        if (!ALLOWED_TRANSITIONS.get(this).contains(next)) {
-            throw new InvalidInputException(
-                String.format("Cannot transition from %s to %s",
-                    this.displayName, next.displayName));
-        }
-        return next;
-    }
-
-    public boolean canTransitionTo(MyStatus next) {
-        return ALLOWED_TRANSITIONS.get(this).contains(next);
-    }
-
-    // ─── Lookup ───────────────────────────────────────────────────────────
-
-    public static Optional<MyStatus> fromName(String name) {
-        try {
-            return Optional.of(MyStatus.valueOf(name.toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            return Optional.empty();
-        }
-    }
-
-    public static MyStatus fromNameOrThrow(String name) {
-        return fromName(name).orElseThrow(() ->
-            new InvalidInputException("Invalid status: '" + name + "'"));
-    }
-}
-```
+See [EnumTemplate.java](./templates/EnumTemplate.java) for a complete FSM-capable enum boilerplate.
 
 ---
 

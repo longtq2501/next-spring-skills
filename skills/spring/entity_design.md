@@ -1,23 +1,23 @@
-# Skill: Entity Design - Spring Boot JPA Best Practices
+## TL;DR - Quick Reference
 
-## Context
-This skill defines the standard patterns for designing JPA entities in Spring Boot projects.
-Covers annotations, relationships, auditing, indexing, optimistic locking, batch loading, and common pitfalls.
-
-**When to use:** Any time you create or review a `@Entity` class — new feature, new table, or refactoring existing entities.
-
-**Dependencies:**
-```xml
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-data-jpa</artifactId>
-</dependency>
-<dependency>
-    <groupId>org.projectlombok</groupId>
-    <artifactId>lombok</artifactId>
-    <optional>true</optional>
-</dependency>
+### Standard Entity Setup
+```java
+@Entity
+@Table(name = "snake_case_table")
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@ToString(exclude = {"lazyRelation1", "lazyRelation2"})
+public class MyEntity extends BaseEntity { ... }
 ```
+
+### Critical Rules
+1. **Always use `FetchType.LAZY`** for `@ManyToOne` and `@OneToOne`.
+2. **Never use `@Data`** on entities (circular refs & N+1).
+3. **Always use `EnumType.STRING`** for enums.
+4. **Initialize Collections** to `new ArrayList<>()` or `new HashSet<>()`.
+5. **Use `Set` + `@BatchSize`** for `@ManyToMany` to avoid bulk-delete bugs.
+
+### 📄 Templates
+- [Standard Entity Template](./templates/EntityTemplate.java)
 
 ---
 
@@ -48,15 +48,12 @@ public class Document { }
 | `@AllArgsConstructor` | Needed alongside `@Builder` |
 | `@Builder` | Fluent object construction in service layer |
 
-**❌ DON'T use `@Data` on entities:**
-```java
-// BAD
-@Data   // ← generates equals/hashCode using all fields → causes infinite loop
-        //   with bidirectional relationships + broken HashSet behavior
+// Bad: generates equals/hashCode using all fields which causes infinite loops
+@Data
 @Entity
 public class Document { }
 
-// GOOD
+// Good: use specific Lombok annotations to avoid circular references
 @Getter
 @Setter
 @Entity
@@ -65,7 +62,7 @@ public class Document { }
 
 **`@ToString(exclude)` — prevent infinite loops and lazy-load explosions:**
 ```java
-// ✅ Exclude all lazy relations and collections
+// Good: Exclude all lazy relations and collections
 @ToString(exclude = {"lessons", "documents", "student"})
 @Entity
 public class SessionRecord { }
@@ -92,10 +89,10 @@ private Long id;
 
 | Strategy | Behavior | Use Case |
 |---|---|---|
-| `IDENTITY` | DB auto-increment | ✅ Default — MySQL, PostgreSQL |
+| `IDENTITY` | DB auto-increment | Yes - Default for MySQL, PostgreSQL |
 | `SEQUENCE` | DB sequence object | PostgreSQL at high insert volume |
 | `UUID` | App-generated UUID | Public-facing IDs (hide row count) |
-| `AUTO` | Hibernate decides | ❌ Avoid — unpredictable across DBs |
+| `AUTO` | Hibernate decides | No - Avoid as it is unpredictable across DBs |
 
 **Optional: UUID for public-facing APIs:**
 ```java
@@ -134,18 +131,18 @@ public class SessionRecord { }
 
 | Situation | Add Index? |
 |---|---|
-| Column used in `WHERE` clause frequently | ✅ Yes |
-| Column used in `JOIN` condition | ✅ Yes |
-| Column used in `ORDER BY` on large table | ✅ Yes |
-| Two columns always queried together | ✅ Composite index |
-| Column rarely queried | ❌ No — indexes slow down writes |
-| Table has < 1,000 rows | ❌ No — full scan is faster |
-| Primary key / unique constraint column | ❌ Already indexed automatically |
+| Column used in `WHERE` clause frequently | Yes |
+| Column used in `JOIN` condition | Yes |
+| Column used in `ORDER BY` on large table | Yes |
+| Two columns always queried together | Composite index |
+| Column rarely queried | No — indexes slow down writes |
+| Table has < 1,000 rows | No — full scan is faster |
+| Primary key / unique constraint column | Already indexed automatically |
 
 **Composite index — column order matters:**
 ```java
 // Query: WHERE student_id = ? AND month = ?
-// ✅ student_id first — highest cardinality (more unique values) goes first
+// Good: student_id first — highest cardinality (more unique values) goes first
 @Index(name = "idx_session_student_month", columnList = "student_id, month")
 
 // This index also covers: WHERE student_id = ?  (leftmost prefix rule)
@@ -180,21 +177,17 @@ private Long downloadCount = 0L;
 
 **`@Builder.Default` — required when using `@Builder` with default values:**
 ```java
-// BAD — @Builder ignores field initializer, downloadCount is null after build
+// Bad: @Builder ignores field initializer, downloadCount is null after build
 private Long downloadCount = 0L;
 
-// GOOD — @Builder.Default preserves the default
+// Good: @Builder.Default preserves the default
 @Builder.Default
 private Long downloadCount = 0L;
 ```
 
----
-
-
-
 **Always use `EnumType.STRING` — never `ORDINAL`:**
 ```java
-// ✅ Stores "PDF", "VIDEO", "IMAGE" — readable, safe to reorder enum
+// Good: Stores "PDF", "VIDEO", "IMAGE" — readable, safe to reorder enum
 @Enumerated(EnumType.STRING)
 @Column(nullable = false)
 private DocumentCategoryType categoryType;
@@ -567,81 +560,7 @@ private LessonStatus status = LessonStatus.SCHEDULED;
 
 ## Full Entity Template
 
-```java
-/**
- * Brief description of what this entity represents.
- * Include business rules, ownership model, or multi-tenancy notes if relevant.
- */
-@Entity
-@Table(name = "table_name", indexes = {
-        @Index(name = "idx_table_owner_id", columnList = "owner_id"),
-        @Index(name = "idx_table_status", columnList = "status"),
-        @Index(name = "idx_table_owner_status", columnList = "owner_id, status")  // composite
-})
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@ToString(exclude = {"children", "tags", "owner"})  // exclude all relations
-public class MyEntity extends BaseEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    // Required string field
-    @Column(nullable = false)
-    private String name;
-
-    // Optional text field with length constraint
-    @Column(length = 1000)
-    private String description;
-
-    // Enum field — always STRING
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
-    private MyStatusEnum status = MyStatusEnum.ACTIVE;
-
-    // Required relation — always LAZY
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)
-    private User owner;
-
-    /**
-     * Optional relation — null means [explain business meaning here].
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "related_id")
-    private RelatedEntity related;
-
-    // Owned one-to-many collection
-    @OneToMany(mappedBy = "myEntity", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ChildEntity> children = new ArrayList<>();
-
-    // Many-to-many — use Set, BatchSize, explicit JoinTable
-    @Builder.Default
-    @ManyToMany(fetch = FetchType.LAZY)
-    @BatchSize(size = 50)
-    @JoinTable(
-        name = "myentity_tags",
-        joinColumns = @JoinColumn(name = "entity_id"),
-        inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
-    private Set<Tag> tags = new HashSet<>();
-
-    // Counter with safe default
-    @Builder.Default
-    @Column(nullable = false)
-    private Long viewCount = 0L;
-
-    // Optimistic locking — for concurrent write protection
-    @Builder.Default
-    @Version
-    private Integer version = 0;
-}
-```
+See [EntityTemplate.java](./templates/EntityTemplate.java) for a complete, production-ready starter.
 
 ---
 

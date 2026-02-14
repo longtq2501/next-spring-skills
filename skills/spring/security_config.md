@@ -1,10 +1,22 @@
-# Skill: Security Configuration - Spring Boot Best Practices
+## TL;DR - Quick Reference
 
-## Context
-This skill defines the standard security configuration pattern for Spring Boot REST APIs using **Spring Security + JWT**.
-Set up once per project — provides authentication, authorization, CORS, and security headers out of the box.
+### Standard Security Setup
+```java
+@Configuration @EnableWebSecurity @EnableMethodSecurity
+public class SecurityConfiguration {
+    @Bean public SecurityFilterChain filterChain(HttpSecurity http) { ... }
+}
+```
 
-**When to use:** New Spring Boot project requiring JWT-based stateless authentication, role-based access control, or CORS configuration for frontend integration.
+### Critical Rules
+1. **Stateless JWT**: Set `SessionCreationPolicy.STATELESS`.
+2. **CORS**: Explicit origins only if `allowCredentials=true` (No wildcard `*`).
+3. **CSRF**: Disable CSRF for stateless APIs.
+4. **Order**: Public rules first, role-based next, `anyRequest().authenticated()` last.
+5. **BCrypt**: Use `strength 10` for production password hashing.
+
+### 📄 Templates
+- [Standard Security Template](./templates/SecurityConfigurationTemplate.java)
 
 **Dependencies:**
 ```xml
@@ -101,35 +113,38 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
 **Order matters — most specific first:**
 ```java
 .authorizeHttpRequests(auth -> auth
-        // ✅ Public endpoints first (most specific)
+        // Good: Public endpoints first (most specific)
         .requestMatchers("/api/auth/**").permitAll()
         .requestMatchers("/api/public/**").permitAll()
 
-        // ✅ Role-based access
+        // Good: Role-based access
         .requestMatchers("/api/admin/**").hasRole("ADMIN")
         .requestMatchers("/api/tutor/**").hasAnyRole("ADMIN", "TUTOR")
 
-        // ✅ HTTP method-level control
+        // Good: HTTP method-level control
         .requestMatchers(HttpMethod.GET, "/api/courses/**").permitAll()
         .requestMatchers(HttpMethod.POST, "/api/courses/**").hasRole("ADMIN")
 
-        // ✅ Infrastructure / tooling
+        // Good: Infrastructure / tooling
         .requestMatchers("/actuator/**").permitAll()
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
         .requestMatchers("/error").permitAll()
 
-        // ✅ Catch-all: require auth for everything else
+        // Good: Catch-all: require auth for everything else
         .anyRequest().authenticated()
 )
 ```
 
-**❌ DON'T put `anyRequest().authenticated()` in the middle — it blocks everything below it:**
-```java
-// BAD
+// Bad: anyRequest().authenticated() blocks subsequent rules
 .requestMatchers("/api/auth/**").permitAll()
-.anyRequest().authenticated()          // ← This blocks everything below
-.requestMatchers("/api/public/**").permitAll()  // ← Never reached
+.anyRequest().authenticated()
+.requestMatchers("/api/public/**").permitAll()
+
+// Good: Correct ordering with catch-all at the bottom
+.requestMatchers("/api/auth/**").permitAll()
+.requestMatchers("/api/public/**").permitAll()
+.anyRequest().authenticated()
 ```
 
 ---
@@ -180,10 +195,13 @@ public CorsConfigurationSource corsConfigurationSource() {
 | File downloads | Must expose `Content-Disposition` header |
 | Preflight caching | Set `setMaxAge(3600L)` to reduce OPTIONS requests |
 
-**❌ BAD — wildcard + credentials will fail:**
-```java
-configuration.setAllowedOrigins(List.of("*"));   // ← Breaks CORS with credentials
-configuration.setAllowCredentials(true);          // ← These two conflict
+// Bad: wildcard + credentials will fail
+configuration.setAllowedOrigins(List.of("*"));
+configuration.setAllowCredentials(true);
+
+// Good: Explicit origin when credentials are required
+configuration.setAllowedOrigins(List.of("https://app.com"));
+configuration.setAllowCredentials(true);
 ```
 
 ---
@@ -374,88 +392,7 @@ public UserResponse getUserById(Long userId) { ... }
 
 ## Quick Reference Template
 
-```java
-@Configuration
-@EnableWebSecurity
-@EnableMethodSecurity
-@RequiredArgsConstructor
-public class SecurityConfiguration {
-
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final UserDetailsService userDetailsService;
-
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .headers(headers -> headers
-                        .httpStrictTransportSecurity(hsts -> hsts
-                                .includeSubDomains(true)
-                                .maxAgeInSeconds(31536000))
-                        .xssProtection(HeadersConfigurer.XXssConfig::disable)
-                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
-                )
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/error").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
-    }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(
-                "https://your-frontend.vercel.app",
-                "http://localhost:3000"
-        ));
-        configuration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"
-        ));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(Arrays.asList(
-                "Content-Disposition", "Content-Type", "Authorization"
-        ));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(10);
-    }
-
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
-            throws Exception {
-        return config.getAuthenticationManager();
-    }
-}
-```
+See [SecurityConfigurationTemplate.java](./templates/SecurityConfigurationTemplate.java) for the complete production boilerplate.
 
 ---
 

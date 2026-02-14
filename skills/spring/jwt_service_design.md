@@ -1,10 +1,23 @@
-# Skill: JWT Service - Spring Boot Best Practices
+## TL;DR - Quick Reference
 
-## Context
-This skill defines the complete JWT authentication flow for Spring Boot REST APIs.
-Covers token generation, validation, refresh token rotation, and integration with Spring Security.
+### Standard JWT Service Setup
+```java
+@Service
+public class JwtService {
+    public String generateToken(UserDetails user) { ... }
+    public boolean isTokenValid(String token, UserDetails user) { ... }
+}
+```
 
-**When to use:** Any project requiring stateless JWT-based authentication with access + refresh token pattern.
+### Critical Rules
+1. **Secret Key**: Store in environment variables, never hardcode.
+2. **Access Token TTL**: Short-lived (15m - 24h).
+3. **Refresh Token**: Use UPSERT (one per user) to avoid race conditions.
+4. **Claims**: Embed roles/IDs to avoid DB lookups, but keep it small.
+5. **Security**: Cast `Principal` directly after login to save a DB hit.
+
+### Templates
+- [JWT Service Template](./templates/JwtServiceTemplate.java)
 
 **Dependencies:**
 ```xml
@@ -585,63 +598,7 @@ Mitigations:
 
 ## Quick Reference Template
 
-**Minimal `JwtService` to copy-paste into any project:**
-```java
-@Service
-public class JwtService {
-
-    @Value("${jwt.secret}")
-    private String secretKey;
-
-    @Value("${jwt.expiration}")
-    private Long jwtExpiration;
-
-    public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
-    }
-
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        return claimsResolver.apply(extractAllClaims(token));
-    }
-
-    public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
-    }
-
-    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        return Jwts.builder()
-                .claims(extraClaims)
-                .subject(userDetails.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(getSignInKey())
-                .compact();
-    }
-
-    public boolean isTokenValid(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
-    }
-
-    public long getExpirationTime() { return jwtExpiration; }
-
-    private boolean isTokenExpired(String token) {
-        return extractClaim(token, Claims::getExpiration).before(new Date());
-    }
-
-    private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSignInKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
-
-    private SecretKey getSignInKey() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
-    }
-}
-```
+See [JwtServiceTemplate.java](./templates/JwtServiceTemplate.java) for the minimal service to handle JWT logic.
 
 ---
 

@@ -1,10 +1,23 @@
-# Skill: REST API Design - Spring Boot Best Practices
+## TL;DR - Quick Reference
 
-## Context
-This skill defines REST API design patterns for Spring Boot applications.
-Extracted from production codebases and proven patterns.
+### Standard Controller Setup
+```java
+@RestController
+@RequestMapping("/api/resources") // prefix /api + plural snake_case
+@RequiredArgsConstructor
+@Slf4j
+public class MyController { ... }
+```
 
-**When to use:** Every time you create a new REST controller or endpoint in any Spring Boot project.
+### Critical Rules
+1. **Always use `/api` prefix** and kebab-case URLs.
+2. **Never return entities** directly — always map to DTOs.
+3. **Return `201 Created`** for successful POST requests.
+4. **Use `@Valid`** for all request body inputs.
+5. **Standardize response format** (Wrapped `ApiResponse` vs Direct).
+
+### 📄 Templates
+- [Standard Controller Template](./templates/ControllerTemplate.java)
 
 ---
 
@@ -20,8 +33,7 @@ Extracted from production codebases and proven patterns.
 @Slf4j                                   // Logging via Lombok
 ```
 
-**✅ DO:**
-```java
+// Good: Correct prefix and constructor injection
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
@@ -29,14 +41,12 @@ Extracted from production codebases and proven patterns.
 public class ProductController {
     private final ProductService service;
 }
-```
 
-**❌ DON'T:**
-```java
+// Bad: Missing /api prefix and using field injection
 @RestController
-@RequestMapping("/products")  // Missing /api prefix
+@RequestMapping("/products")
 public class ProductController {
-    @Autowired  // Use constructor injection instead
+    @Autowired
     private ProductService service;
 }
 ```
@@ -713,55 +723,8 @@ throw new DuplicateResourceException("Product with this SKU already exists");
 ---
 
 ## Quick Reference Template
-```java
-@RestController
-@RequestMapping("/api/{resources}")
-@RequiredArgsConstructor
-@Slf4j
-public class ResourceController {
-    
-    private final ResourceService service;
-    
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<ResourceResponse>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.success(service.findAll()));
-    }
-    
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ResourceResponse>> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(service.findById(id)));
-    }
-    
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping
-    public ResponseEntity<ApiResponse<ResourceResponse>> create(
-            @Valid @RequestBody ResourceRequest request,
-            @AuthenticationPrincipal UserDetails user
-    ) {
-        log.info("Resource creation initiated by: {}", user.getUsername());
-        ResourceResponse response = service.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Resource created successfully", response));
-    }
-    
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ResourceResponse>> update(
-            @PathVariable Long id,
-            @Valid @RequestBody ResourceRequest request
-    ) {
-        ResourceResponse response = service.update(id, request);
-        return ResponseEntity.ok(ApiResponse.success("Resource updated successfully", response));
-    }
-    
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
-        service.delete(id);
-        return ResponseEntity.ok(ApiResponse.success("Resource deleted successfully", null));
-    }
-}
-```
+
+See [ControllerTemplate.java](./templates/ControllerTemplate.java) for a complete REST controller boilerplate.
 
 ---
 

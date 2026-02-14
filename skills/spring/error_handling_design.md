@@ -1,10 +1,21 @@
-# Skill: Error Handling - Spring Boot Best Practices
+## TL;DR - Quick Reference
 
-## Context
-This skill defines centralized error handling patterns for Spring Boot REST APIs.
-All exceptions should be handled in one place (`@RestControllerAdvice`) for consistency.
+### Global Setup
+```java
+@RestControllerAdvice
+@Slf4j
+public class GlobalExceptionHandler { ... }
+```
 
-**When to use:** Set up once per project, then throw exceptions from anywhere (controllers, services, repositories).
+### Critical Rules
+1. **Never handle exceptions in Controllers** — let them bubble up to `RestControllerAdvice`.
+2. **Specifics before Generics** — Spring matches exception handlers top-to-bottom.
+3. **Standard Error Format** — Always return the same `ApiResponse` (success=false).
+4. **Log Levels** — INFO/WARN for 4xx errors, ERROR + Stacktrace for 500 errors.
+5. **Never expose stacktraces** or internal database details to the client.
+
+### 📄 Templates
+- [Global Exception Handler Template](./templates/GlobalExceptionHandlerTemplate.java)
 
 ---
 
@@ -31,9 +42,7 @@ public class GlobalExceptionHandler {
 - ✅ Controllers stay clean (just throw exceptions)
 - ✅ Easy to maintain and test
 
-**❌ DON'T handle exceptions in controllers:**
-```java
-// BAD
+// Bad: Handling exceptions manually in controllers leads to duplication
 @GetMapping("/{id}")
 public ResponseEntity<?> getById(@PathVariable Long id) {
     try {
@@ -43,11 +52,10 @@ public ResponseEntity<?> getById(@PathVariable Long id) {
     }
 }
 
-// GOOD
+// Good: Controller stays clean, Exception handled by GlobalExceptionHandler
 @GetMapping("/{id}")
 public ResponseEntity<ApiResponse<ProductResponse>> getById(@PathVariable Long id) {
     return ResponseEntity.ok(ApiResponse.success(service.findById(id)));
-    // Exception thrown by service → handled by GlobalExceptionHandler
 }
 ```
 
@@ -652,70 +660,8 @@ class GlobalExceptionHandlerTest {
 ---
 
 ## Quick Reference Template
-```java
-@RestControllerAdvice
-@Slf4j
-public class GlobalExceptionHandler {
-    
-    // 404 - Not Found
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNotFound(ResourceNotFoundException ex) {
-        log.warn("Resource not found: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
-    
-    // 409 - Conflict
-    @ExceptionHandler(AlreadyExistsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleConflict(AlreadyExistsException ex) {
-        log.warn("Duplicate resource: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(ex.getMessage()));
-    }
-    
-    // 400 - Validation Failed
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(
-            MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach(error -> {
-            String field = ((FieldError) error).getField();
-            String message = error.getDefaultMessage();
-            errors.put(field, message);
-        });
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.<Map<String, String>>builder()
-                        .success(false)
-                        .message("Validation failed")
-                        .data(errors)
-                        .build());
-    }
-    
-    // 401 - Unauthorized
-    @ExceptionHandler({BadCredentialsException.class, ExpiredJwtException.class})
-    public ResponseEntity<ApiResponse<Void>> handleUnauthorized(Exception ex) {
-        log.info("Authentication failed: {}", ex.getClass().getSimpleName());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error("Authentication failed"));
-    }
-    
-    // 403 - Forbidden
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleForbidden(AccessDeniedException ex) {
-        log.warn("Access denied: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error("Access denied"));
-    }
-    
-    // 500 - Internal Server Error
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGlobal(Exception ex) {
-        log.error("Unexpected error occurred", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An unexpected error occurred"));
-    }
-}
-```
+
+See [GlobalExceptionHandlerTemplate.java](./templates/GlobalExceptionHandlerTemplate.java) for the complete production-ready handler.
 
 ---
 

@@ -1,10 +1,22 @@
-# Skill: Service Design - Spring Boot Best Practices
+## TL;DR - Quick Reference
 
-## Context
-This skill defines standard patterns for designing service layer classes in Spring Boot projects.
-Covers interface/impl separation, transaction management, validation flow, mapping, and naming conventions.
+### Standard Service Setup
+```java
+public interface MyService { ... }
 
-**When to use:** Any time you create or refactor a `@Service` class — new feature, new module, or cleaning up existing services.
+@Service @RequiredArgsConstructor
+public class MyServiceImpl implements MyService { ... }
+```
+
+### Critical Rules
+1. **Always split interface/impl** — inject the interface, hide the implementation.
+2. **Method Order**: Validate → Load → Mutate → Save → Return.
+3. **Transactions**: Use `@Transactional(readOnly = true)` for GET, and `@Transactional` for POST/PUT/DELETE.
+4. **Exceptions**: Throw domain-specific exceptions (ResourceNotFound, AlreadyExists).
+5. **Mapping**: Use private `mapToResponse()` or a dedicated Mapper.
+
+### 📄 Templates
+- [Standard Service Template](./templates/ServiceTemplate.java)
 
 ---
 
@@ -69,18 +81,16 @@ public class TutorServiceImpl implements TutorService {
 | Bug fixing | Know exactly where to look — interface = what, impl = where |
 | Dependency injection | `@Autowired TutorService` injects impl automatically |
 
-**❌ Without separation:**
-```java
-// BAD — controller tightly coupled to implementation
+// Bad: controller tightly coupled to implementation
 @RequiredArgsConstructor
 public class TutorController {
-    private final TutorServiceImpl tutorService;  // ← coupled to impl
+    private final TutorServiceImpl tutorService;
 }
 
-// ✅ With interface — controller depends on contract, not implementation
+// Good: controller depends on contract, not implementation
 @RequiredArgsConstructor
 public class TutorController {
-    private final TutorService tutorService;      // ← depends on interface
+    private final TutorService tutorService;
 }
 ```
 
@@ -108,13 +118,13 @@ public class TutorServiceImpl implements TutorService {
 | `@RequiredArgsConstructor` | Lombok constructor injection — no `@Autowired` needed |
 | `@Slf4j` | Lombok logger — `log.info(...)`, `log.error(...)` |
 
-**❌ Don't use field injection:**
+**Bad: Don't use field injection:**
 ```java
-// BAD — field injection hides dependencies, harder to test
+// Bad: field injection hides dependencies, harder to test
 @Autowired
 private TutorRepository tutorRepository;
 
-// GOOD — constructor injection via @RequiredArgsConstructor
+// Good: constructor injection via @RequiredArgsConstructor
 private final TutorRepository tutorRepository;
 ```
 
@@ -163,9 +173,7 @@ public TutorResponse getTutorById(Long id) { ... }
 | Read-only (no writes) | `@Transactional(readOnly = true)` |
 | Multiple reads, no writes | `@Transactional(readOnly = true)` |
 
-**⚠️ Multi-step writes must be in one `@Transactional` method:**
-```java
-// ✅ Both saves are atomic — if tutorRepository.save() fails, userRepository.save() rolls back
+// Good: Both saves are atomic — if tutorRepository.save() fails, userRepository.save() rolls back
 @Transactional
 public TutorResponse createTutor(TutorRequest request) {
     User user = userRepository.save(newUser);   // step 1
@@ -302,13 +310,13 @@ public TutorResponse updateTutor(Long id, TutorRequest request) {
 
 **Use domain-specific exceptions — never raw `RuntimeException`:**
 ```java
-// ❌ BAD — loses context, generic message
+// Bad: loses context, generic message
 throw new RuntimeException("Tutor not found with id: " + id);
 
-// ✅ GOOD — specific exception → maps to correct HTTP status in GlobalExceptionHandler
-throw new ResourceNotFoundException("Tutor not found with id: " + id);   // → 404
-throw new AlreadyExistsException("Email already exists: " + email);       // → 409
-throw new InvalidInputException("Password must be at least 8 characters"); // → 400
+// Good: specifically handled exception type
+throw new ResourceNotFoundException("Tutor not found with id: " + id);   // -> 404
+throw new AlreadyExistsException("Email already exists: " + email);       // -> 409
+throw new InvalidInputException("Password must be at least 8 characters"); // -> 400
 ```
 
 **Common exception → HTTP status mapping:**
@@ -395,11 +403,10 @@ public Page<TutorResponse> getAllTutors(String search, String status, Pageable p
 ```
 
 **`Page.map()` — transform Page contents without losing pagination metadata:**
-```java
-// ✅ map() preserves total count, page number, page size
+// Good: map() preserves total count, page number, page size
 return tutors.map(this::mapToResponse);
 
-// ❌ Manual stream — loses all pagination metadata
+// Bad: Manual stream — loses all pagination metadata
 return tutors.getContent().stream()
         .map(this::mapToResponse)
         .collect(Collectors.toList());
@@ -506,29 +513,13 @@ New service method?
 
 ## Full Structure Template
 
-```
-modules/
-└── tutor/
-    ├── entity/
-    │   └── Tutor.java
-    ├── dto/
-    │   ├── request/
-    │   │   └── TutorRequest.java
-    │   └── response/
-    │       └── TutorResponse.java
-    ├── repository/
-    │   └── TutorRepository.java
-    └── service/
-        ├── TutorService.java          ← interface
-        └── impl/
-            └── TutorServiceImpl.java  ← implementation
-```
+See [ServiceTemplate.java](./templates/ServiceTemplate.java) for a complete Service Interface/Impl boilerplate.
 
 ---
 
 ## Common Patterns Summary
 
-### ✅ DO's:
+### DO's:
 
 1. **Split into interface + impl** — `TutorService` + `TutorServiceImpl` in `impl/`
 2. **Inject the interface**, not the impl, in controllers and other services
@@ -541,7 +532,7 @@ modules/
 9. **Use `Page.map()`** to transform paginated results — preserves metadata
 10. **Add defensive null check** in `mapToResponse()` for lazy-loaded relations
 
-### ❌ DON'Ts:
+### DON'Ts:
 
 1. **Don't put `@Service` on the interface** — only on the impl
 2. **Don't inject `TutorServiceImpl` directly** — always inject `TutorService`

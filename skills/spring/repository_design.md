@@ -1,10 +1,21 @@
-# Skill: Repository Design - Spring Boot JPA Best Practices
+## TL;DR - Quick Reference
 
-## Context
-This skill defines standard patterns for designing Spring Data JPA repositories.
-Covers query methods, JPQL, native queries, locking, projections, and naming conventions.
+### Standard Repo Setup
+```java
+@Repository
+public interface MyRepository extends JpaRepository<MyEntity, Long> {
+    Optional<MyEntity> findByEmail(String email);
+    Page<MyEntity> findAllByStatus(MyStatus status, Pageable pageable);
+}
+```
 
-**When to use:** Any time you add a new repository interface, write a custom query, or review existing data access patterns.
+### Critical Rules
+1. **Derived Queries**: Use for 1-2 conditions (`findByStudentId`).
+2. **@Query (JPQL)**: Use for 3+ conditions or joins.
+3. **Named Parameters**: Always use `@Param("name")` instead of `?1`.
+4. **Aggregations**: Always wrap with `COALESCE(SUM(...), 0)` to avoid NPE.
+5. **Paginated Results**: Use `Page<T>` for UI, `Slice<T>` for infinite scroll.
+6. **Native Queries**: Use ONLY for UPSERT or join-table operations.
 
 **Performance note:** JOIN FETCH, `@EntityGraph`, `@BatchSize`, and N+1 avoidance are covered in `skills/spring/query_optimization.md`. This skill focuses on **design and structure** — what type of query to write and how to name/organize it.
 
@@ -34,7 +45,11 @@ public interface SessionRecordRepository extends JpaRepository<SessionRecord, Lo
 | `existsById(id)` | Existence check |
 | `count()` | Row count |
 
-**❌ Don't extend `CrudRepository` or `PagingAndSortingRepository` directly** unless you have a specific reason — `JpaRepository` includes both and adds `flush()`, `saveAndFlush()`, batch operations.
+// Bad: Extending basic repository interfaces
+public interface MyRepo extends CrudRepository<T, ID> { }
+
+// Good: JpaRepository includes all the essentials
+public interface MyRepo extends JpaRepository<T, ID> { }
 
 ---
 
@@ -115,22 +130,22 @@ List<String> findDistinctMonths();
 
 **`@Param` — always name parameters explicitly:**
 ```java
-// ✅ Named parameter — matches :tutorId in query
+// Good: Named parameter — matches :tutorId in query
 @Query("... WHERE sr.tutorId = :tutorId")
 Page<SessionRecord> findByTutorId(@Param("tutorId") Long tutorId, Pageable pageable);
 
-// ❌ Positional parameter — fragile, breaks on reorder
+// Bad: Positional parameter — fragile, breaks on reorder
 @Query("... WHERE sr.tutorId = ?1")
 Page<SessionRecord> findByTutorId(Long tutorId, Pageable pageable);
 ```
 
 **`COALESCE` — always wrap aggregations to avoid null:**
 ```java
-// ✅ Returns 0 instead of null when no rows match
+// Good: Returns 0 instead of null when no rows match
 @Query("SELECT COALESCE(SUM(sr.totalAmount), 0) FROM SessionRecord sr WHERE ...")
 Long sumTotalPaid();
 
-// ❌ Returns null when no rows — causes NullPointerException in service layer
+// Bad: Returns null when no rows — causes NullPointerException in service layer
 @Query("SELECT SUM(sr.totalAmount) FROM SessionRecord sr WHERE ...")
 Long sumTotalPaid();
 ```
@@ -169,10 +184,10 @@ public class MonthlyStats {
 
 | Use Case | Approach |
 |---|---|
-| Dashboard/reporting aggregations | ✅ Constructor expression |
-| Financial summaries (SUM, COUNT, GROUP BY) | ✅ Constructor expression |
-| Loading full entity with relations | ❌ Use entity query + JOIN FETCH |
-| Simple scalar values (single SUM) | ❌ Return `Long` / `Integer` directly |
+| Dashboard/reporting aggregations | Yes - Constructor expression |
+| Financial summaries (SUM, COUNT, GROUP BY) | Yes - Constructor expression |
+| Loading full entity with relations | No - Use entity query + JOIN FETCH |
+| Simple scalar values (single SUM) | No - Return `Long` / `Integer` directly |
 
 ---
 

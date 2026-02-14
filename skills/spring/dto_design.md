@@ -1,16 +1,21 @@
-# Skill: DTO Design - Spring Boot Best Practices
+## TL;DR - Quick Reference
 
-## Context
-This skill defines the standard patterns for designing DTOs (Data Transfer Objects) in Spring Boot projects.
-Covers request DTOs, response DTOs, validation, nested objects, Lombok setup, and naming conventions.
-
-**When to use:** Any time you create an input payload, API response, or data mapping class — new endpoint, new feature, or refactoring existing DTOs.
-
-**Rule of thumb:**
+### Standard DTO Setup
+```java
+@Data @Builder @NoArgsConstructor @AllArgsConstructor
+public class MyRequest/Response { ... }
 ```
-Request DTO  →  Controller  →  Service  →  Entity  (write path)
-Entity       →  Service     →  Response DTO         (read path)
-```
+
+### Critical Rules
+1. **Request DTOs** are for input validation (use `@Valid`).
+2. **Response DTOs** are for UI formatting (flat, clean, no secrets).
+3. **Never reuse** the same DTO for both request and response.
+4. **Jackson compatibility** — Always include `@NoArgsConstructor`.
+5. **Package separation** — Keep them in `dto.request` and `dto.response`.
+
+### Templates
+- [Request DTO Template](./templates/RequestDTOTemplate.java)
+- [Response DTO Template](./templates/ResponseDTOTemplate.java)
 
 ---
 
@@ -61,8 +66,8 @@ public class InvoiceResponse { }
 
 | Class | `@Data` safe? | Reason |
 |---|---|---|
-| Entity | ❌ No | Has lazy-loaded relations → infinite loop in `equals/hashCode` |
-| DTO | ✅ Yes | Plain fields only, no JPA proxies or circular refs |
+| Entity | No | Has lazy-loaded relations → infinite loop in `equals/hashCode` |
+| DTO | Yes | Plain fields only, no JPA proxies or circular refs |
 
 **⚠️ Exception — avoid `@Data` on Response DTOs with nested lists if you override `equals`:**
 ```java
@@ -476,64 +481,7 @@ public class InvoiceService {
 
 ## Full DTO Templates
 
-### Request DTO
-```java
-/**
- * Request payload for [action].
- * [Describe modes or conditional logic if any.]
- */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class FeatureRequest {
-
-    @NotNull(message = "Field is required")
-    private Long requiredId;
-
-    @NotBlank(message = "Name is required")
-    @Size(max = 255, message = "Name cannot exceed 255 characters")
-    private String name;
-
-    // Optional field — document what null means
-    private String optionalField;
-
-    @Valid
-    private NestedRequest nested;
-
-    private List<Long> relatedIds;
-}
-```
-
-### Response DTO
-```java
-/**
- * Response payload for [feature], intended for [export / display / listing].
- */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class FeatureResponse {
-
-    private Long id;
-    private String name;
-    private String status;          // formatted string, not raw enum
-    private String createdDate;     // formatted, not LocalDateTime
-
-    private List<ItemResponse> items;
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ItemResponse {
-        private Long id;
-        private String label;
-        private Long amount;
-    }
-}
-```
+See [RequestDTOTemplate.java](./templates/RequestDTOTemplate.java) and [ResponseDTOTemplate.java](./templates/ResponseDTOTemplate.java) for clean starter classes.
 
 ---
 
