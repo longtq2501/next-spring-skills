@@ -75,6 +75,9 @@ See [self-hosting.md](./nextjs/self-hosting.md) for Docker and ISR cache handler
 ### Debug Tricks
 See [debug-tricks.md](./nextjs/debug-tricks.md) for AI-assisted debugging and build paths.
 
+### Performance
+See [performance.md](./nextjs/performance.md) for React optimization and data fetching strategies.
+
 ---
 
 ## AI Agent Workflow
@@ -103,6 +106,7 @@ High-performance, stateless REST API patterns using Spring Boot, JPA, and JWT.
 
 ### Performance
 - [Query Optimization](./spring/query_optimization.md)
+- [Performance Optimization](./spring/performance_optimization.md)
 
 ---
 

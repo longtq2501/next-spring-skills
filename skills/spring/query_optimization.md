@@ -1,78 +1,89 @@
-# Skill: Query Optimization - Spring Data JPA Performance
+# Skill: Query Optimization - Database Performance
+
+Advanced patterns for scaling and optimizing database access in high-traffic applications.
 
 ## TL;DR - Quick Reference
 
 ### Critical Rules
-1. **Always Avoid N+1**: Use `JOIN FETCH` or `@EntityGraph` for relations.
-2. **Lazy Loading**: Set all `@ManyToOne` and `@OneToOne` to `FetchType.LAZY`.
-3. **Projections**: Use Constructor Expressions (`new DTO(...)`) for read-only reports.
-4. **Batching**: Use `@BatchSize` on collections to optimize IN-clause loading.
-5. **Read-Only**: Use `@Transactional(readOnly = true)` for search/get operations.
+1. **DTO Projection**: Reduce payload by 60-80% using constructor expressions.
+2. **JOIN FETCH / @EntityGraph**: Fix N+1 problems by fetching relations eagerly.
+3. **Composite Indexing**: Query under 10ms by indexing multiple columns used in WHERE/JOIN.
+4. **Leftmost Prefix**: Lead with the most selective column in composite indexes.
+5. **Slow Query Guards**: Use `@QueryHints` to set timeouts and prevent resource starvation.
 
 ---
 
-## 1. N+1 Problem & Solutions
+## 1. Database Query Optimization
 
-### The Problem
-Loading 10 entities with a lazy relation causes 10 additional queries to fetch those relations.
+### DTO Projection
+// Bad: Loading full entities just for a few fields
+@Query("SELECT s FROM Student s")
+List<Student> findAll();
 
-### Solution: JOIN FETCH
+// Good: Loading only required fields into a DTO (Giảm 60-80% payload)
+@Query("SELECT new com.example.dto.StudentDTO(s.id, s.name, s.email) FROM Student s")
+List<StudentDTO> findAllProjected();
 
-```java
-// Bad: Loading relations lazily in a loop causes N+1 queries
-@Query("SELECT o FROM Order o WHERE o.status = :status")
-List<Order> findAllByStatus(@Param("status") String status);
+### JOIN FETCH vs @EntityGraph
+// Bad: Causes N+1 problem
+List<Order> orders = repo.findAll(); // 1 query
+orders.forEach(o -> o.getItems().size()); // N queries
 
-// Good: Using JOIN FETCH to load relations in a single query
-@Query("SELECT o FROM Order o JOIN FETCH o.items WHERE o.status = :status")
-List<Order> findAllWithItems(@Param("status") String status);
-```
+// Good: Single query with JOIN FETCH
+@Query("SELECT o FROM Order o JOIN FETCH o.items")
+List<Order> findAllWithItems();
 
-### Solution: @EntityGraph
-
-```java
-// Bad: Default fetch will cause multiple queries for lazy fields
-List<Order> findAllByStatus(String status);
-
-// Good: EntityGraph specifies which fields to fetch eagerly
+// Good: Declarative eager loading
 @EntityGraph(attributePaths = {"items", "customer"})
-List<Order> findAllByStatus(String status);
-```
+List<Order> findAllWithGraph();
+
+### Indexing Standards
+- **Composite Indexing**: Standard for complex queries.
+- **Index Column Ordering**: Always lead with the column used most frequently or with highest selectivity (Leftmost prefix rule).
+
+| Rule | Description |
+|---|---|
+| Use `EXPLAIN` | Always verify index usage for slow queries (>100ms) |
+| Composite Order | Most selective column goes first |
+| Functional Index | Use for queries on modified columns (e.g., `LOWER(email)`) |
 
 ---
 
-## 2. Projections for Reporting
-Avoid loading full Entities when you only need a few fields.
+## 2. Advanced Scaling Patterns
 
-```java
-// Bad: Loading full Order and Customer entities for a simple report
-@Query("SELECT o FROM Order o JOIN o.customer c")
-List<Order> findAllOrders();
+### Database Sharding & Partitioning
+Scale horizontally when a single database reaches its limit.
+- **Partitioning**: Split table by date/id within the same DB (e.g., `sessions_2024`).
+- **Sharding**: Distribute data across multiple physical servers.
 
-// Good: Loading only required fields into a DTO
-@Query("SELECT new com.example.dto.OrderSummary(o.id, o.orderNumber, c.name) " +
-       "FROM Order o JOIN o.customer c")
-List<OrderSummary> findSummaries();
-```
+### Read Replicas
+Scale read operations independently of writes.
+- **Master**: Handles all `INSERT/UPDATE/DELETE`.
+- **Replica**: Handles all `SELECT` (Search/Get).
+- **Pro Tip**: Use `@Transactional(readOnly = true)` to route traffic to replicas.
 
 ---
 
-## 3. Batch Loading
-Optimize collection loading when `JOIN FETCH` isn't suitable (e.g., multiple collections).
+## 3. Bulk & Streaming Operations
 
-```java
-// Bad: Default loading causes N additional queries for the items collection
-@OneToMany(mappedBy = "order")
-private List<Item> items;
+### Bulk Operations (JDBC Template)
+JPA `saveAll()` is slow for thousands of records. Use JDBC batching for high performance.
+// Good: JDBC batch update (10x faster than JPA)
+jdbcTemplate.batchUpdate(
+    "INSERT INTO students VALUES (?, ?)",
+    students,
+    100, // batch size
+    (ps, student) -> { ... }
+);
 
-// Good: BatchSize allows loading multiple collections in a single IN-clause query
-@OneToMany(mappedBy = "order")
-@BatchSize(size = 20)
-private List<Item> items;
-```
+### Response Streaming
+Use for large exports (50k+ records) to keep memory usage low.
+// Good: Stream large datasets
+@GetMapping(produces = "application/x-ndjson")
+public Flux<StudentDTO> streamAll() { ... }
 
 ---
 
 ## Related Skills
 - **Entity Design**: `skills/spring/entity_design.md`
-- **Repository Design**: `skills/spring/repository_design.md`
+- **Performance Optimization**: `skills/spring/performance_optimization.md`

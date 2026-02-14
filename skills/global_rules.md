@@ -20,7 +20,7 @@ Combines monolith simplicity with microservices modularity.
 ### Database & Performance
 - **Critical**: Always disable OSIV (`spring.jpa.open-in-view=false`).
 - **Standard**: Always paginate large datasets. Use `JOIN FETCH` for N+1 issues.
-- **See Details**: [query_optimization.md](./spring/query_optimization.md)
+- **See Details**: [query_optimization.md](./spring/query_optimization.md) & [performance_optimization.md](./spring/performance_optimization.md)
 
 ---
 
