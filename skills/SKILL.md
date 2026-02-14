@@ -63,6 +63,9 @@ See [ui-state.md](./nextjs/ui-state.md) for Zustand store patterns and URL param
 ### Three.js & 3D
 See [threejs.md](./nextjs/threejs.md) for high-performance 3D development and R3F.
 
+### WebRTC & P2P
+See [webrtc.md](./nextjs/webrtc.md) for real-time media and signaling.
+
 ### Accessibility (a11y)
 See [accessibility.md](./nextjs/accessibility.md) for semantic HTML and ARIA.
 
@@ -110,6 +113,10 @@ High-performance, stateless REST API patterns using Spring Boot, JPA, and JWT.
 ### Performance
 - [Query Optimization](./spring/query_optimization.md)
 - [Performance Optimization](./spring/performance_optimization.md)
+
+### Real-time
+- [WebSocket & STOMP](./spring/websocket.md)
+- [Server-Sent Events (SSE)](./spring/sse.md)
 
 ---
 
