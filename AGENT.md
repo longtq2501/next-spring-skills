@@ -1,5 +1,8 @@
 # Agent Instructions
 
+> [!IMPORTANT]
+> **MANDATORY STARTUP STEP**: Upon starting a new session or entering this project, the AI Agent **MUST** immediately read `skills/SKILL.md` to index all available standards and architectural patterns. Do not proceed with code generation until you have understood the patterns in the `skills/` directory.
+
 Rules for contributing to this repository.
 
 ## Style Guidelines

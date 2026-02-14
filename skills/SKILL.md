@@ -69,6 +69,9 @@ See [webrtc.md](./nextjs/webrtc.md) for real-time media and signaling.
 ### Quality Assurance
 See [testing.md](./nextjs/testing.md) for Vitest and React Testing Library patterns.
 
+### Architecture & Monorepo
+See [monorepo.md](./nextjs/monorepo.md) for Turborepo and code-sharing strategies.
+
 ### Accessibility (a11y)
 See [accessibility.md](./nextjs/accessibility.md) for semantic HTML and ARIA.
 

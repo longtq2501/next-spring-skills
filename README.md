@@ -1,5 +1,7 @@
 # Next-Spring Skills
 
+[![npm version](https://img.shields.io/npm/v/@longtq2501/next-spring-skills.svg)](https://www.npmjs.com/package/@longtq2501/next-spring-skills)
+
 Modular best practices, code templates, and interaction protocols for full-stack projects using **Next.js** and **Spring Boot**.
 
 ## Key Directories
