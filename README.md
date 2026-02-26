@@ -1,6 +1,6 @@
 # Next-Spring Skills
 
-[![npm version](https://img.shields.io/npm/v/@longtq2501/next-spring-skills.svg)](https://www.npmjs.com/package/@longtq2501/next-spring-skills)
+[![npm version](https://img.shields.io/npm/v/next-spring-skills.svg)](https://www.npmjs.com/package/next-spring-skills)
 
 Modular best practices, code templates, and interaction protocols for full-stack projects using **Next.js** and **Spring Boot**.
 
@@ -14,7 +14,7 @@ Modular best practices, code templates, and interaction protocols for full-stack
 ---
 
 ## NPM Package
-📦 **Registry**: [https://www.npmjs.com/package/@longtq2501/next-spring-skills](https://www.npmjs.com/package/@longtq2501/next-spring-skills)
+📦 **Registry**: [https://www.npmjs.com/package/next-spring-skills](https://www.npmjs.com/package/next-spring-skills)
 
 ---
 
@@ -22,7 +22,7 @@ Modular best practices, code templates, and interaction protocols for full-stack
 You can instantly add these skills to any project using `npx`:
 
 ```bash
-npx @longtq2501/next-spring-skills
+npx next-spring-skills
 ```
 
 This will copy the `skills/` directory and `AGENT.md` into your current project folder.
