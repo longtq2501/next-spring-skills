@@ -14,8 +14,9 @@ public interface MyRepository extends JpaRepository<MyEntity, Long> {
 2. **@Query (JPQL)**: Use for 3+ conditions or joins.
 3. **Named Parameters**: Always use `@Param("name")` instead of `?1`.
 4. **Aggregations**: Always wrap with `COALESCE(SUM(...), 0)` to avoid NPE.
-5. **Paginated Results**: Use `Page<T>` for UI, `Slice<T>` for infinite scroll.
-6. **Native Queries**: Use ONLY for UPSERT or join-table operations.
+5. **Filtering**: Always filter in DB (`WHERE`) instead of loading into Java memory.
+6. **Constants**: Replace magic numbers (e.g., Page size) with named constants.
+7. **Paginated Results**: Use `Page<T>` for UI, `Slice<T>` for infinite scroll.
 
 **Performance note:** JOIN FETCH, `@EntityGraph`, `@BatchSize`, and N+1 avoidance are covered in `skills/spring/query_optimization.md`. This skill focuses on **design and structure** — what type of query to write and how to name/organize it.
 
@@ -96,8 +97,10 @@ boolean existsByStudentIdAndLessonId(Long studentId, Long lessonId);
 // ❌ Too complex — derived query becomes unreadable
 List<SessionRecord> findByStudentIdAndTutorIdAndMonthAndPaidAndStatusNotIn(...);
 
-// ✅ Use @Query for anything with 3+ conditions or joins
-@Query("SELECT sr FROM SessionRecord sr WHERE ...")
+// ✅ Use @Query for anything with 3+ conditions or joins. 
+// Standard: Filter in DB to save memory and CPU.
+@Query("SELECT sr FROM SessionRecord sr WHERE sr.tutor.id = :id AND sr.status = :status")
+List<SessionRecord> findByTutorAndStatus(@Param("id") Long id, @Param("status") Status status);
 ```
 
 **Rule of thumb:** derived query with more than 2 conditions → switch to `@Query`.

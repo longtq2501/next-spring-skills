@@ -11,9 +11,10 @@ public class MyServiceImpl implements MyService { ... }
 ### Critical Rules
 1. **Always split interface/impl** — inject the interface, hide the implementation.
 2. **Method Order**: Validate → Load → Mutate → Save → Return.
-3. **Transactions**: Use `@Transactional(readOnly = true)` for GET, and `@Transactional` for POST/PUT/DELETE.
-4. **Exceptions**: Throw domain-specific exceptions (ResourceNotFound, AlreadyExists).
-5. **Mapping**: Use private `mapToResponse()` or a dedicated Mapper.
+3. **Transactions**: Use `@Transactional(readOnly = true)` for GET, and `@Transactional` for POST/PUT/DELETE. Split heavy logic from write transactions.
+4. **Exceptions**: Throw domain-specific exceptions. **NEVER** swallow exceptions (e.g., JSON processing).
+5. **Enums**: Always compare using `==`. Never use `.name().equals()`.
+6. **Mapping**: Use private `mapToResponse()` or a dedicated Mapper.
 
 ### 📄 Templates
 - [Standard Service Template](./templates/ServiceTemplate.java)
@@ -180,6 +181,18 @@ public TutorResponse createTutor(TutorRequest request) {
     Tutor tutor = tutorRepository.save(newTutor); // step 2 — if this fails, step 1 rolls back
     return mapToResponse(tutor);
 }
+
+// Pro Tip: Split heavy processing from the write transaction to reduce lock time
+public void processHeavyReport() {
+    // 1. Load data (readOnly)
+    Data data = service.getData(id); 
+    
+    // 2. Heavy CPU calculation (No transaction)
+    Result result = calculate(data); 
+    
+    // 3. Save result (Write transaction)
+    service.saveResult(result); 
+}
 ```
 
 ---
@@ -317,6 +330,13 @@ throw new RuntimeException("Tutor not found with id: " + id);
 throw new ResourceNotFoundException("Tutor not found with id: " + id);   // -> 404
 throw new AlreadyExistsException("Email already exists: " + email);       // -> 409
 throw new InvalidInputException("Password must be at least 8 characters"); // -> 400
+
+// Rule: Never swallow technical exceptions. Re-throw or wrap them.
+try {
+    return objectMapper.writeValueAsString(data);
+} catch (JsonProcessingException e) {
+    throw new TechnicalException("Failed to serialize data", e); // Correct
+}
 ```
 
 **Common exception → HTTP status mapping:**

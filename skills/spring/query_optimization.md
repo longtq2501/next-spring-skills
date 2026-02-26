@@ -10,6 +10,7 @@ Advanced patterns for scaling and optimizing database access in high-traffic app
 3. **Composite Indexing**: Query under 10ms by indexing multiple columns used in WHERE/JOIN.
 4. **Leftmost Prefix**: Lead with the most selective column in composite indexes.
 5. **Slow Query Guards**: Use `@QueryHints` to set timeouts and prevent resource starvation.
+6. **P95 Targets**: Ensure API response time < 2s by optimizing database index paths.
 
 ---
 

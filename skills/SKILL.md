@@ -92,6 +92,30 @@ See [performance.md](./nextjs/performance.md) for React optimization and data fe
 
 ---
 
+## Design Intelligence (Pro Max)
+
+Standardized design systems, color palettes, and UX guidelines.
+
+### Core Database
+See [SKILL.md](./ui-ux-pro-max/SKILL.md) for styles, palettes, and font pairings.
+
+### Next.js Integration
+See [design-intelligence.md](./nextjs/design-intelligence.md) for mapping design to high-performance code.
+
+---
+
+## Troubleshooting & Debugging (Pro Max)
+
+Systematic workflows for identifying and fixing complex issues.
+
+### Unified Workflow
+See [debug-and-fix.md](./debug-and-fix.md) for the 5-step debugging process (Observation → Verification).
+
+### Next.js Debug Tricks
+See [debug-tricks.md](./nextjs/debug-tricks.md) for `nezt/mcp` and build path debugging.
+
+---
+
 ## AI Agent Workflow
 
 ### Interaction Protocol

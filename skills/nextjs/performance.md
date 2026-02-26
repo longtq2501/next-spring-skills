@@ -52,6 +52,17 @@ Ensure the server or CDN uses GZIP/Brotli to compress JSON responses.
 
 ---
 
+## 4. Visual Performance (Design Intelligence)
+
+Design choices impact technical performance. Balance aesthetics with the 60FPS target:
+
+1.  **Glassmorphism**: Limit `backdrop-blur` usage. Multiple layers can cause heavy CPU/GPU load on lower-end devices.
+2.  **Animations**: Use `will-change: transform` for hardware acceleration. Avoid animating `width`, `height`, or `margin`.
+3.  **SVGs vs Emojis**: Never use emojis for UI icons. SVGs offer superior performance (vector), accessibility (aria-label), and brand consistency.
+
+---
+
 ## Related Skills
+- **Design Intelligence**: `skills/nextjs/design-intelligence.md`
 - **Interactivity & Animation**: `skills/nextjs/interactivity.md`
 - **UI State Management**: `skills/nextjs/ui-state.md`

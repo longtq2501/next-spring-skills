@@ -74,9 +74,16 @@ Use CSS variables in `globals.css` for theming instead of hardcoding colors in T
 }
 ```
 
-## Common Libraries in Next.js
+## Design System Integration (Pro Max)
 
-- **shadcn/ui**: All-purpose, clean, professional.
-- **Radix UI**: Foundational primitives.
-- **Headless UI**: Good for Tailwind + simple components.
-- **Magic UI / Aceternity UI**: For high-end marketing and background effects (often uses Framer Motion).
+For professional projects, do not choose colors or styles manually. Use the Design Intelligence system:
+
+1.  **Generate**: Run `python3 skills/ui-ux-pro-max/scripts/search.py` to get recommended palettes and styles.
+2.  **Map**: Translate generated CSS variables to `globals.css`.
+3.  **Audit**: Follow the `Pre-Delivery Checklist` in `skills/ui-ux-pro-max/SKILL.md` (no emojis, cursor pointers, etc.).
+
+---
+
+## Related Skills
+- **Design Intelligence**: `skills/nextjs/design-intelligence.md`
+- **Component Aesthetics**: `skills/nextjs/component-aesthetics.md`

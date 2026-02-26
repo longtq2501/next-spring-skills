@@ -27,6 +27,14 @@ npx @longtq2501/next-spring-skills
 
 This will copy the `skills/` directory and `AGENT.md` into your current project folder.
 
+Meta-Prompt:
+
+> "Triển khai [Task của bạn] theo chuẩn Design Intelligence + Next.js Performance." 
+
+> "Triển khai [Backend Task] theo chuẩn Spring Boot Pro Max (Performance & Clean Code)."
+
+> "Sửa lỗi [Mô tả lỗi] theo chuẩn Debug & Fix Pro Max."
+
 ## Workflow
 
 This repository is designed for **AI-Human Collaboration**. For every new task:
