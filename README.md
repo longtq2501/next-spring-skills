@@ -28,12 +28,13 @@ npx @longtq2501/next-spring-skills
 This will copy the `skills/` directory and `AGENT.md` into your current project folder.
 
 Meta-Prompt:
+```bash
+"Implement [Frontend Task] following Design Intelligence + Next.js Performance standards."
 
-> "Triển khai [Task của bạn] theo chuẩn Design Intelligence + Next.js Performance." 
+"Implement [Backend Task] following Spring Boot Pro Max standards (Performance & Clean Code)."
 
-> "Triển khai [Backend Task] theo chuẩn Spring Boot Pro Max (Performance & Clean Code)."
-
-> "Sửa lỗi [Mô tả lỗi] theo chuẩn Debug & Fix Pro Max."
+"Resolve [Error Description] following Debug & Fix Pro Max standards."
+```
 
 ## Workflow
 
