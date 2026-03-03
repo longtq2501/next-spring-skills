@@ -22,8 +22,8 @@ Modular best practices, code templates, and interaction protocols for full-stack
 You can instantly add these skills to any project using `npx`:
 
 ```bash
-npx next-spring-skills
-```
+npx @longtq2501/next-spring-skills
+``` 
 
 This will copy the `skills/` directory and `AGENT.md` into your current project folder.
 
